@@ -2,4 +2,4 @@
 
 # ini files
 
-Simple ini handler in go.
+Simple ini handler in go. Not thread safe.

@@ -11,10 +11,12 @@ import (
 
 type Ini map[string]map[string]string
 
+// New returns a new Ini structure
 func New() Ini {
 	return make(Ini)
 }
 
+// Load will parse source and merge loaded values
 func (i Ini) Load(source io.Reader) error {
 	r := bufio.NewScanner(source)
 	section := "root"
@@ -62,6 +64,7 @@ func (i Ini) Load(source io.Reader) error {
 	return r.Err()
 }
 
+// Write generates a ini file and writes it to the provided output
 func (i Ini) Write(d io.Writer) error {
 	if s, ok := i["root"]; ok {
 		if err := i.writeSection(d, s); err != nil {
@@ -97,6 +100,8 @@ func (i Ini) writeSection(d io.Writer, s map[string]string) error {
 	return err
 }
 
+// Get returns a value for a given key. Use section "root" for entries at the
+// beginning of the file.
 func (i Ini) Get(section, key string) (string, bool) {
 	s, ok := i[strings.ToLower(section)]
 	if !ok {
@@ -107,6 +112,7 @@ func (i Ini) Get(section, key string) (string, bool) {
 	return r, ok
 }
 
+// Set changes a value in the ini file
 func (i Ini) Set(section, key, value string) {
 	s, ok := i[strings.ToLower(section)]
 	if !ok {
@@ -117,6 +123,7 @@ func (i Ini) Set(section, key, value string) {
 	s[strings.ToLower(key)] = value
 }
 
+// Unset removes a value from the ini file
 func (i Ini) Unset(section, key string) {
 	s, ok := i[strings.ToLower(section)]
 	if !ok {
