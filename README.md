@@ -7,6 +7,7 @@ A robust INI file handler in Go that supports common INI file features.
 ## Features
 
 - Simple and intuitive API
+- Implements standard Go interfaces (`io.ReaderFrom` and `io.WriterTo`)
 - Support for different comment styles (`;` and `#`)
 - Handling of quoted values (both single and double quotes)
 - Thread-safe option via `IniSafe` wrapper
@@ -31,10 +32,15 @@ func main() {
 	// Create a new INI structure
 	config := ini.New()
 
-	// Load from a file
+	// Load from a file (two equivalent ways)
 	file, _ := os.Open("config.ini")
 	defer file.Close()
-	config.Load(file)
+	
+	// Using io.ReaderFrom interface (preferred)
+	config.ReadFrom(file)
+	
+	// Or using the legacy method
+	// config.Load(file)
 
 	// Get values
 	if value, ok := config.Get("section", "key"); ok {
@@ -53,12 +59,26 @@ func main() {
 		fmt.Println("Section exists!")
 	}
 
-	// Write to a file
+	// Write to a file (two equivalent ways)
 	outFile, _ := os.Create("newconfig.ini")
 	defer outFile.Close()
-	config.Write(outFile)
+	
+	// Using io.WriterTo interface (preferred)
+	config.WriteTo(outFile)
+	
+	// Or using the legacy method
+	// config.Write(outFile)
 }
 ```
+
+## Standard Go Interfaces
+
+The library implements the standard Go interfaces:
+
+- `io.ReaderFrom`: Parse INI files with `ReadFrom(r io.Reader) (n int64, err error)`
+- `io.WriterTo`: Write INI files with `WriteTo(w io.Writer) (n int64, err error)`
+
+These interfaces make the library more idiomatic and composable with other Go libraries.
 
 ## Thread-Safety
 
@@ -71,6 +91,26 @@ config := ini.NewThreadSafe()
 // Use the same API methods
 config.Set("section", "key", "value")
 value, ok := config.Get("section", "key")
+
+// Use standard interfaces
+file, _ := os.Open("config.ini")
+config.ReadFrom(file)
+
+outFile, _ := os.Create("output.ini")
+config.WriteTo(outFile)
+```
+
+## Section Management
+
+```go
+// Check if section exists
+if config.HasSection("mysection") {
+    // Get all section names
+    sections := config.Sections()
+    
+    // Get all keys in a section
+    keys := config.Keys("mysection")
+}
 ```
 
 ## License

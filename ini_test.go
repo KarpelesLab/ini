@@ -219,6 +219,87 @@ func TestWriteAndRead(t *testing.T) {
 	}
 }
 
+func TestReaderFromWriterTo(t *testing.T) {
+	ini1 := ini.New()
+	ini1.Set("root", "key1", "value1")
+	ini1.Set("section", "key2", "value2")
+	ini1.Set("section", "key with spaces", "value with spaces")
+	
+	buf := &bytes.Buffer{}
+	bytesWritten, err := ini1.WriteTo(buf)
+	if err != nil {
+		t.Errorf("WriteTo failed: %v", err)
+		return
+	}
+	
+	if bytesWritten <= 0 {
+		t.Errorf("Expected bytesWritten > 0, got %d", bytesWritten)
+	}
+	
+	// Parse the written content back
+	ini2 := ini.New()
+	bytesRead, err := ini2.ReadFrom(bytes.NewReader(buf.Bytes()))
+	if err != nil {
+		t.Errorf("ReadFrom failed: %v", err)
+		return
+	}
+	
+	if bytesRead <= 0 {
+		t.Errorf("Expected bytesRead > 0, got %d", bytesRead)
+	}
+	
+	// Verify values were preserved
+	if v, ok := ini2.Get("root", "key1"); !ok || v != "value1" {
+		t.Errorf("Round-trip value mismatch for root/key1, got %#v", v)
+	}
+	
+	if v, ok := ini2.Get("section", "key2"); !ok || v != "value2" {
+		t.Errorf("Round-trip value mismatch for section/key2, got %#v", v)
+	}
+	
+	if v, ok := ini2.Get("section", "key with spaces"); !ok || v != "value with spaces" {
+		t.Errorf("Round-trip value mismatch for key with spaces, got %#v", v)
+	}
+}
+
+func TestThreadSafeReadWrite(t *testing.T) {
+	ini1 := ini.NewThreadSafe()
+	ini1.Set("root", "key1", "value1")
+	ini1.Set("section", "key2", "value2")
+	
+	buf := &bytes.Buffer{}
+	bytesWritten, err := ini1.WriteTo(buf)
+	if err != nil {
+		t.Errorf("WriteTo failed: %v", err)
+		return
+	}
+	
+	if bytesWritten <= 0 {
+		t.Errorf("Expected bytesWritten > 0, got %d", bytesWritten)
+	}
+	
+	// Parse the written content back
+	ini2 := ini.NewThreadSafe()
+	bytesRead, err := ini2.ReadFrom(bytes.NewReader(buf.Bytes()))
+	if err != nil {
+		t.Errorf("ReadFrom failed: %v", err)
+		return
+	}
+	
+	if bytesRead <= 0 {
+		t.Errorf("Expected bytesRead > 0, got %d", bytesRead)
+	}
+	
+	// Verify values were preserved
+	if v, ok := ini2.Get("root", "key1"); !ok || v != "value1" {
+		t.Errorf("Round-trip value mismatch for root/key1, got %#v", v)
+	}
+	
+	if v, ok := ini2.Get("section", "key2"); !ok || v != "value2" {
+		t.Errorf("Round-trip value mismatch for section/key2, got %#v", v)
+	}
+}
+
 func TestErrorCases(t *testing.T) {
 	testCases := []struct {
 		name     string

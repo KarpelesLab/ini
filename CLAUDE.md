@@ -4,6 +4,7 @@
 - Build project: `make`
 - Run all tests: `make test` or `go test -v`
 - Run single test: `go test -v -run TestName` (e.g., `go test -v -run TestIni`)
+- Check test coverage: `go test -cover` or `go test -coverprofile=coverage.out && go tool cover -func=coverage.out`
 - Install dependencies: `make deps`
 - Format code: `goimports -w -l .`
 
@@ -17,3 +18,5 @@
 - Line length: Keep reasonable (<100 chars where possible)
 - Use `map[string]map[string]string` structure for ini data
 - Return explicit boolean success flags with values (e.g., `string, bool`)
+- Implement standard Go interfaces (`io.ReaderFrom`, `io.WriterTo`) where applicable
+- Mark deprecated methods with `// Deprecated:` comments and indicate alternatives

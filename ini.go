@@ -34,15 +34,27 @@ func NewThreadSafe() *IniSafe {
 }
 
 // Load will parse source and merge loaded values.
+// Deprecated: Use ReadFrom instead which implements io.ReaderFrom interface.
 func (i Ini) Load(source io.Reader) error {
+	_, err := i.ReadFrom(source)
+	return err
+}
+
+// ReadFrom implements the io.ReaderFrom interface.
+// It parses the source and merges loaded values, returning the number of bytes read and any error.
+func (i Ini) ReadFrom(source io.Reader) (int64, error) {
 	r := bufio.NewScanner(source)
 	section := "root"
 	var sectionMap map[string]string
 	lineNum := 0
+	var bytesRead int64
 
 	for r.Scan() {
 		lineNum++
-		line := strings.TrimSpace(r.Text())
+		line := r.Text()
+		bytesRead += int64(len(line) + 1) // +1 for the newline
+
+		line = strings.TrimSpace(line)
 		if len(line) == 0 {
 			continue
 		}
@@ -57,7 +69,7 @@ func (i Ini) Load(source io.Reader) error {
 		if len(line) >= 2 && line[0] == '[' && line[len(line)-1] == ']' {
 			section = strings.ToLower(strings.TrimSpace(line[1 : len(line)-1]))
 			if section == "" {
-				return fmt.Errorf("line %d: empty section name", lineNum)
+				return bytesRead, fmt.Errorf("line %d: empty section name", lineNum)
 			}
 			sectionMap = nil
 			continue
@@ -65,12 +77,12 @@ func (i Ini) Load(source io.Reader) error {
 
 		pos := strings.IndexByte(line, '=')
 		if pos < 0 {
-			return fmt.Errorf("line %d: invalid format, missing '='", lineNum)
+			return bytesRead, fmt.Errorf("line %d: invalid format, missing '='", lineNum)
 		}
 
 		k := strings.ToLower(strings.TrimSpace(line[:pos]))
 		if k == "" {
-			return fmt.Errorf("line %d: empty key name", lineNum)
+			return bytesRead, fmt.Errorf("line %d: empty key name", lineNum)
 		}
 		
 		v := strings.TrimSpace(line[pos+1:])
@@ -94,20 +106,28 @@ func (i Ini) Load(source io.Reader) error {
 	}
 
 	if err := r.Err(); err != nil {
-		return fmt.Errorf("scanner error: %w", err)
+		return bytesRead, fmt.Errorf("scanner error: %w", err)
 	}
 	
-	return nil
+	return bytesRead, nil
 }
 
 // Write generates an ini file and writes it to the provided output.
+// Deprecated: Use WriteTo instead which implements io.WriterTo interface.
 func (i Ini) Write(d io.Writer) error {
+	_, err := i.WriteTo(d)
+	return err
+}
+
+// WriteTo implements the io.WriterTo interface.
+// It generates an ini file and writes it to the provided output, returning the number of bytes written and any error.
+func (i Ini) WriteTo(d io.Writer) (int64, error) {
 	var builder strings.Builder
 	
 	// Write root section first
 	if s, ok := i["root"]; ok && len(s) > 0 {
 		if err := i.writeSection(&builder, s); err != nil {
-			return err
+			return 0, err
 		}
 		builder.WriteString("\n")
 	}
@@ -123,13 +143,14 @@ func (i Ini) Write(d io.Writer) error {
 		builder.WriteString("]\n")
 
 		if err := i.writeSection(&builder, s); err != nil {
-			return err
+			return 0, err
 		}
 		builder.WriteString("\n")
 	}
 	
-	_, err := d.Write([]byte(builder.String()))
-	return err
+	content := builder.String()
+	n, err := d.Write([]byte(content))
+	return int64(n), err
 }
 
 func (i Ini) writeSection(b *strings.Builder, s map[string]string) error {
@@ -241,17 +262,31 @@ func (i Ini) Keys(section string) []string {
 // Thread-safe methods
 
 // Load parses source and merges loaded values in a thread-safe manner.
+// Deprecated: Use ReadFrom instead which implements io.ReaderFrom interface.
 func (i *IniSafe) Load(source io.Reader) error {
+	_, err := i.ReadFrom(source)
+	return err
+}
+
+// ReadFrom implements the io.ReaderFrom interface with thread safety.
+func (i *IniSafe) ReadFrom(source io.Reader) (int64, error) {
 	i.mu.Lock()
 	defer i.mu.Unlock()
-	return i.data.Load(source)
+	return i.data.ReadFrom(source)
 }
 
 // Write generates an ini file and writes it to the provided output in a thread-safe manner.
+// Deprecated: Use WriteTo instead which implements io.WriterTo interface.
 func (i *IniSafe) Write(d io.Writer) error {
+	_, err := i.WriteTo(d)
+	return err
+}
+
+// WriteTo implements the io.WriterTo interface with thread safety.
+func (i *IniSafe) WriteTo(d io.Writer) (int64, error) {
 	i.mu.RLock()
 	defer i.mu.RUnlock()
-	return i.data.Write(d)
+	return i.data.WriteTo(d)
 }
 
 // Get returns a value for a given key in a thread-safe manner.
