@@ -70,9 +70,9 @@ func (i Ini) ReadFrom(source io.Reader) (int64, error) {
 		if k == "" {
 			return bytesRead, fmt.Errorf("line %d: empty key name", lineNum)
 		}
-		
+
 		v := strings.TrimSpace(line[pos+1:])
-		
+
 		// Handle quotes
 		if len(v) >= 2 && (v[0] == '"' && v[len(v)-1] == '"' || v[0] == '\'' && v[len(v)-1] == '\'') {
 			v = v[1 : len(v)-1]
@@ -94,7 +94,7 @@ func (i Ini) ReadFrom(source io.Reader) (int64, error) {
 	if err := r.Err(); err != nil {
 		return bytesRead, fmt.Errorf("scanner error: %w", err)
 	}
-	
+
 	return bytesRead, nil
 }
 
@@ -109,7 +109,7 @@ func (i Ini) Write(d io.Writer) error {
 // It generates an ini file and writes it to the provided output, returning the number of bytes written and any error.
 func (i Ini) WriteTo(d io.Writer) (int64, error) {
 	var builder strings.Builder
-	
+
 	// Write root section first
 	if s, ok := i["root"]; ok && len(s) > 0 {
 		if err := i.writeSection(&builder, s); err != nil {
@@ -133,7 +133,7 @@ func (i Ini) WriteTo(d io.Writer) (int64, error) {
 		}
 		builder.WriteString("\n")
 	}
-	
+
 	content := builder.String()
 	n, err := d.Write([]byte(content))
 	return int64(n), err
@@ -143,22 +143,22 @@ func (i Ini) writeSection(b *strings.Builder, s map[string]string) error {
 	for k, v := range s {
 		// Check if value needs quoting
 		needsQuotes := strings.ContainsAny(v, " \t\n\r")
-		
+
 		b.WriteString(k)
 		b.WriteString("=")
-		
+
 		if needsQuotes {
 			b.WriteString("\"")
 			// Escape quotes in the value
 			v = strings.ReplaceAll(v, "\"", "\\\"")
 		}
-		
+
 		b.WriteString(v)
-		
+
 		if needsQuotes {
 			b.WriteString("\"")
 		}
-		
+
 		b.WriteString("\n")
 	}
 	return nil
@@ -188,7 +188,7 @@ func (i Ini) GetDefault(section, key, defaultValue string) string {
 func (i Ini) Set(section, key, value string) {
 	section = strings.ToLower(section)
 	key = strings.ToLower(key)
-	
+
 	s, ok := i[section]
 	if !ok {
 		s = make(map[string]string)
@@ -202,7 +202,7 @@ func (i Ini) Set(section, key, value string) {
 func (i Ini) Unset(section, key string) {
 	section = strings.ToLower(section)
 	key = strings.ToLower(key)
-	
+
 	s, ok := i[section]
 	if !ok {
 		return
@@ -237,11 +237,10 @@ func (i Ini) Keys(section string) []string {
 	if !ok {
 		return nil
 	}
-	
+
 	keys := make([]string, 0, len(s))
 	for key := range s {
 		keys = append(keys, key)
 	}
 	return keys
 }
-

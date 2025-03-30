@@ -86,11 +86,11 @@ var4=unquoted`
 func TestSet(t *testing.T) {
 	ini := ini.New()
 	ini.Set("section", "key", "value")
-	
+
 	if v, ok := ini.Get("section", "key"); !ok || v != "value" {
 		t.Errorf("Set failed, got %#v %#v", v, ok)
 	}
-	
+
 	// Test overwriting
 	ini.Set("section", "key", "new value")
 	if v, ok := ini.Get("section", "key"); !ok || v != "new value" {
@@ -102,18 +102,18 @@ func TestUnset(t *testing.T) {
 	ini := ini.New()
 	ini.Set("section", "key1", "value1")
 	ini.Set("section", "key2", "value2")
-	
+
 	// Test removing a key
 	ini.Unset("section", "key1")
 	if _, ok := ini.Get("section", "key1"); ok {
 		t.Errorf("Unset failed, key still exists")
 	}
-	
+
 	// Make sure other keys in the same section still exist
 	if v, ok := ini.Get("section", "key2"); !ok || v != "value2" {
 		t.Errorf("Unset affected other keys, got %#v %#v", v, ok)
 	}
-	
+
 	// Test that removing the last key in a section removes the section
 	ini.Unset("section", "key2")
 	if ini.HasSection("section") {
@@ -124,12 +124,12 @@ func TestUnset(t *testing.T) {
 func TestGetDefault(t *testing.T) {
 	ini := ini.New()
 	ini.Set("section", "key", "value")
-	
+
 	// Test existing key
 	if v := ini.GetDefault("section", "key", "default"); v != "value" {
 		t.Errorf("GetDefault for existing key returned %#v, wanted %#v", v, "value")
 	}
-	
+
 	// Test non-existing key
 	if v := ini.GetDefault("section", "nonexistent", "default"); v != "default" {
 		t.Errorf("GetDefault for non-existing key returned %#v, wanted %#v", v, "default")
@@ -140,12 +140,12 @@ func TestSections(t *testing.T) {
 	ini := ini.New()
 	ini.Set("section1", "key", "value")
 	ini.Set("section2", "key", "value")
-	
+
 	sections := ini.Sections()
 	if len(sections) != 2 {
 		t.Errorf("Expected 2 sections, got %d", len(sections))
 	}
-	
+
 	// Check section names (order not guaranteed)
 	found1, found2 := false, false
 	for _, s := range sections {
@@ -155,7 +155,7 @@ func TestSections(t *testing.T) {
 			found2 = true
 		}
 	}
-	
+
 	if !found1 || !found2 {
 		t.Errorf("Sections() didn't return all section names")
 	}
@@ -165,12 +165,12 @@ func TestKeys(t *testing.T) {
 	ini := ini.New()
 	ini.Set("section", "key1", "value1")
 	ini.Set("section", "key2", "value2")
-	
+
 	keys := ini.Keys("section")
 	if len(keys) != 2 {
 		t.Errorf("Expected 2 keys, got %d", len(keys))
 	}
-	
+
 	// Check key names (order not guaranteed)
 	found1, found2 := false, false
 	for _, k := range keys {
@@ -180,7 +180,7 @@ func TestKeys(t *testing.T) {
 			found2 = true
 		}
 	}
-	
+
 	if !found1 || !found2 {
 		t.Errorf("Keys() didn't return all key names")
 	}
@@ -191,29 +191,29 @@ func TestWriteAndRead(t *testing.T) {
 	ini1.Set("root", "key1", "value1")
 	ini1.Set("section", "key2", "value2")
 	ini1.Set("section", "key with spaces", "value with spaces")
-	
+
 	buf := &bytes.Buffer{}
 	if err := ini1.Write(buf); err != nil {
 		t.Errorf("Write failed: %v", err)
 		return
 	}
-	
+
 	// Parse the written content back
 	ini2 := ini.New()
 	if err := ini2.Load(bytes.NewReader(buf.Bytes())); err != nil {
 		t.Errorf("Failed to reload written data: %v", err)
 		return
 	}
-	
+
 	// Verify values were preserved
 	if v, ok := ini2.Get("root", "key1"); !ok || v != "value1" {
 		t.Errorf("Round-trip value mismatch for root/key1, got %#v", v)
 	}
-	
+
 	if v, ok := ini2.Get("section", "key2"); !ok || v != "value2" {
 		t.Errorf("Round-trip value mismatch for section/key2, got %#v", v)
 	}
-	
+
 	if v, ok := ini2.Get("section", "key with spaces"); !ok || v != "value with spaces" {
 		t.Errorf("Round-trip value mismatch for key with spaces, got %#v", v)
 	}
@@ -224,18 +224,18 @@ func TestReaderFromWriterTo(t *testing.T) {
 	ini1.Set("root", "key1", "value1")
 	ini1.Set("section", "key2", "value2")
 	ini1.Set("section", "key with spaces", "value with spaces")
-	
+
 	buf := &bytes.Buffer{}
 	bytesWritten, err := ini1.WriteTo(buf)
 	if err != nil {
 		t.Errorf("WriteTo failed: %v", err)
 		return
 	}
-	
+
 	if bytesWritten <= 0 {
 		t.Errorf("Expected bytesWritten > 0, got %d", bytesWritten)
 	}
-	
+
 	// Parse the written content back
 	ini2 := ini.New()
 	bytesRead, err := ini2.ReadFrom(bytes.NewReader(buf.Bytes()))
@@ -243,20 +243,20 @@ func TestReaderFromWriterTo(t *testing.T) {
 		t.Errorf("ReadFrom failed: %v", err)
 		return
 	}
-	
+
 	if bytesRead <= 0 {
 		t.Errorf("Expected bytesRead > 0, got %d", bytesRead)
 	}
-	
+
 	// Verify values were preserved
 	if v, ok := ini2.Get("root", "key1"); !ok || v != "value1" {
 		t.Errorf("Round-trip value mismatch for root/key1, got %#v", v)
 	}
-	
+
 	if v, ok := ini2.Get("section", "key2"); !ok || v != "value2" {
 		t.Errorf("Round-trip value mismatch for section/key2, got %#v", v)
 	}
-	
+
 	if v, ok := ini2.Get("section", "key with spaces"); !ok || v != "value with spaces" {
 		t.Errorf("Round-trip value mismatch for key with spaces, got %#v", v)
 	}
@@ -266,18 +266,18 @@ func TestThreadSafeReadWrite(t *testing.T) {
 	ini1 := ini.NewThreadSafe()
 	ini1.Set("root", "key1", "value1")
 	ini1.Set("section", "key2", "value2")
-	
+
 	buf := &bytes.Buffer{}
 	bytesWritten, err := ini1.WriteTo(buf)
 	if err != nil {
 		t.Errorf("WriteTo failed: %v", err)
 		return
 	}
-	
+
 	if bytesWritten <= 0 {
 		t.Errorf("Expected bytesWritten > 0, got %d", bytesWritten)
 	}
-	
+
 	// Parse the written content back
 	ini2 := ini.NewThreadSafe()
 	bytesRead, err := ini2.ReadFrom(bytes.NewReader(buf.Bytes()))
@@ -285,16 +285,16 @@ func TestThreadSafeReadWrite(t *testing.T) {
 		t.Errorf("ReadFrom failed: %v", err)
 		return
 	}
-	
+
 	if bytesRead <= 0 {
 		t.Errorf("Expected bytesRead > 0, got %d", bytesRead)
 	}
-	
+
 	// Verify values were preserved
 	if v, ok := ini2.Get("root", "key1"); !ok || v != "value1" {
 		t.Errorf("Round-trip value mismatch for root/key1, got %#v", v)
 	}
-	
+
 	if v, ok := ini2.Get("section", "key2"); !ok || v != "value2" {
 		t.Errorf("Round-trip value mismatch for section/key2, got %#v", v)
 	}
@@ -322,17 +322,17 @@ func TestErrorCases(t *testing.T) {
 			errorMsg: "invalid format, missing '='",
 		},
 	}
-	
+
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			ini := ini.New()
 			err := ini.Load(strings.NewReader(tc.content))
-			
+
 			if err == nil {
 				t.Errorf("Expected error for %s, got nil", tc.name)
 				return
 			}
-			
+
 			if !strings.Contains(err.Error(), tc.errorMsg) {
 				t.Errorf("Expected error containing %q, got %q", tc.errorMsg, err.Error())
 			}
@@ -343,12 +343,12 @@ func TestErrorCases(t *testing.T) {
 func TestThreadSafeBasic(t *testing.T) {
 	ini := ini.NewThreadSafe()
 	ini.Set("section", "key", "initial")
-	
+
 	// Test concurrent access
 	var wg sync.WaitGroup
 	for i := 0; i < 10; i++ {
 		wg.Add(2)
-		
+
 		// Reader goroutine
 		go func() {
 			defer wg.Done()
@@ -358,7 +358,7 @@ func TestThreadSafeBasic(t *testing.T) {
 			ini.Sections()
 			ini.Keys("section")
 		}()
-		
+
 		// Writer goroutine
 		go func() {
 			defer wg.Done()
@@ -368,7 +368,7 @@ func TestThreadSafeBasic(t *testing.T) {
 			ini.Unset("concurrent", "key")
 		}()
 	}
-	
+
 	wg.Wait()
 	// If we got here without race detector errors, we're good
 }
