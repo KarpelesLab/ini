@@ -83,6 +83,46 @@ var4=unquoted`
 	}
 }
 
+func TestRoundTripEscaping(t *testing.T) {
+	ini1 := ini.New()
+	ini1.Set("section", "quotes", `value with "quotes"`)
+	ini1.Set("section", "newlines", "line1\nline2\rline3\tindented")
+	ini1.Set("section", "special", "special=chars;and#some[more]")
+	ini1.Set("section", "backslash", `value with \backslash`)
+
+	buf := &bytes.Buffer{}
+	_, err := ini1.WriteTo(buf)
+	if err != nil {
+		t.Errorf("WriteTo failed: %v", err)
+		return
+	}
+
+	// Parse the written content back
+	ini2 := ini.New()
+	_, err = ini2.ReadFrom(bytes.NewReader(buf.Bytes()))
+	if err != nil {
+		t.Errorf("ReadFrom failed: %v", err)
+		return
+	}
+
+	// Verify values were preserved
+	if v, ok := ini2.Get("section", "quotes"); !ok || v != `value with "quotes"` {
+		t.Errorf("Round-trip quotes mismatch, got %#v", v)
+	}
+
+	if v, ok := ini2.Get("section", "newlines"); !ok || v != "line1\nline2\rline3\tindented" {
+		t.Errorf("Round-trip newlines mismatch, got %#v", v)
+	}
+
+	if v, ok := ini2.Get("section", "special"); !ok || v != "special=chars;and#some[more]" {
+		t.Errorf("Round-trip special mismatch, got %#v", v)
+	}
+
+	if v, ok := ini2.Get("section", "backslash"); !ok || v != `value with \backslash` {
+		t.Errorf("Round-trip backslash mismatch, got %#v", v)
+	}
+}
+
 func TestSet(t *testing.T) {
 	ini := ini.New()
 	ini.Set("section", "key", "value")

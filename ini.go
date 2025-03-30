@@ -29,7 +29,11 @@ func (i Ini) Load(source io.Reader) error {
 // ReadFrom implements the io.ReaderFrom interface.
 // It parses the source and merges loaded values, returning the number of bytes read and any error.
 func (i Ini) ReadFrom(source io.Reader) (int64, error) {
+	// Create a scanner with an increased buffer size for long lines
 	r := bufio.NewScanner(source)
+	buf := make([]byte, 64*1024) // 64KB buffer, up from the default 4KB
+	r.Buffer(buf, 1024*1024)     // Allow up to 1MB per line
+
 	section := "root"
 	var sectionMap map[string]string
 	lineNum := 0
@@ -38,7 +42,7 @@ func (i Ini) ReadFrom(source io.Reader) (int64, error) {
 	for r.Scan() {
 		lineNum++
 		line := r.Text()
-		bytesRead += int64(len(line) + 1) // +1 for the newline
+		bytesRead += int64(len(line) + 1) // +1 for the newline (approximation)
 
 		line = strings.TrimSpace(line)
 		if len(line) == 0 {
@@ -73,10 +77,57 @@ func (i Ini) ReadFrom(source io.Reader) (int64, error) {
 
 		v := strings.TrimSpace(line[pos+1:])
 
-		// Handle quotes
-		if len(v) >= 2 && (v[0] == '"' && v[len(v)-1] == '"' || v[0] == '\'' && v[len(v)-1] == '\'') {
-			v = v[1 : len(v)-1]
-			// TODO: handle escape sequences properly
+		// Handle quotes and escape sequences
+		if len(v) >= 2 {
+			if (v[0] == '"' && v[len(v)-1] == '"') || (v[0] == '\'' && v[len(v)-1] == '\'') {
+				quote := v[0]
+				v = v[1 : len(v)-1] // Remove quotes
+
+				// Process escape sequences
+				if strings.ContainsRune(v, '\\') {
+					var b strings.Builder
+					b.Grow(len(v))
+
+					escape := false
+					for _, c := range v {
+						if escape {
+							switch c {
+							case 'n':
+								b.WriteRune('\n')
+							case 'r':
+								b.WriteRune('\r')
+							case 't':
+								b.WriteRune('\t')
+							case '\\':
+								b.WriteRune('\\')
+							case '"', '\'':
+								if byte(c) == quote {
+									b.WriteRune(c)
+								} else {
+									b.WriteRune('\\')
+									b.WriteRune(c)
+								}
+							default:
+								// Invalid escape sequence, just write it out
+								b.WriteRune('\\')
+								b.WriteRune(c)
+							}
+							escape = false
+						} else if c == '\\' {
+							escape = true
+						} else {
+							b.WriteRune(c)
+						}
+					}
+
+					// Handle trailing backslash
+					if escape {
+						b.WriteRune('\\')
+					}
+
+					v = b.String()
+				}
+			}
 		}
 
 		if sectionMap == nil {
@@ -142,18 +193,34 @@ func (i Ini) WriteTo(d io.Writer) (int64, error) {
 func (i Ini) writeSection(b *strings.Builder, s map[string]string) error {
 	for k, v := range s {
 		// Check if value needs quoting
-		needsQuotes := strings.ContainsAny(v, " \t\n\r")
+		needsQuotes := strings.ContainsAny(v, " \t\n\r\"'=;#[]")
 
 		b.WriteString(k)
 		b.WriteString("=")
 
 		if needsQuotes {
 			b.WriteString("\"")
-			// Escape quotes in the value
-			v = strings.ReplaceAll(v, "\"", "\\\"")
-		}
 
-		b.WriteString(v)
+			// Process the value to properly escape special characters
+			for _, c := range v {
+				switch c {
+				case '"':
+					b.WriteString("\\\"")
+				case '\\':
+					b.WriteString("\\\\")
+				case '\n':
+					b.WriteString("\\n")
+				case '\r':
+					b.WriteString("\\r")
+				case '\t':
+					b.WriteString("\\t")
+				default:
+					b.WriteRune(c)
+				}
+			}
+		} else {
+			b.WriteString(v)
+		}
 
 		if needsQuotes {
 			b.WriteString("\"")
