@@ -1,12 +1,17 @@
 # CLAUDE.md - Guidelines for KarpelesLab/ini
 
 ## Build/Test Commands
-- Build project: `make`
+- Build project: `make` (IMPORTANT: Always run this before committing)
 - Run all tests: `make test` or `go test -v`
 - Run single test: `go test -v -run TestName` (e.g., `go test -v -run TestIni`)
 - Check test coverage: `go test -cover` or `go test -coverprofile=coverage.out && go tool cover -func=coverage.out`
 - Install dependencies: `make deps`
 - Format code: `goimports -w -l .`
+
+## Workflow Guidelines
+- Always run `make` before committing to ensure proper formatting and successful build
+- Run `make test` to verify that tests still pass after your changes
+- Consider checking code coverage with `go test -cover` to ensure adequate test coverage
 
 ## Code Style Guidelines
 - Import formatting: Standard Go grouping (stdlib first, then external)
