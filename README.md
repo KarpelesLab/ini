@@ -1,4 +1,6 @@
-[![GoDoc](https://godoc.org/github.com/KarpelesLab/ini?status.svg)](https://godoc.org/github.com/KarpelesLab/ini)
+[![Go Report Card](https://goreportcard.com/badge/github.com/KarpelesLab/ini?style=flat-square)](https://goreportcard.com/report/github.com/KarpelesLab/ini)
+[![PkgGoDev](https://pkg.go.dev/badge/github.com/KarpelesLab/ini)](https://pkg.go.dev/github.com/KarpelesLab/ini)
+[![Release](https://img.shields.io/github/release/KarpelesLab/ini.svg?style=flat-square)](https://github.com/KarpelesLab/ini/releases/latest)
 
 # INI File Parser for Go
 
